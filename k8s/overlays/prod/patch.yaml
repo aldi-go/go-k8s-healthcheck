@@ -3,12 +3,18 @@ kind: Deployment
 metadata:
   name: go-k8s-healthcheck
 spec:
-  # Prod: 3 replicas minimum for HA across nodes
   replicas: 3
   template:
     spec:
       containers:
       - name: server
+        env:
+        - name: APP_ENV
+          value: "production"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: VERSION
+          value: "1.0.0"
         resources:
           requests:
             cpu: "100m"

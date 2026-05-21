@@ -1,24 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namePrefix: ""
-nameSuffix: ""
-
 resources:
 - ../../base
 
-# Override image tag for dev
 images:
 - name: ghcr.io/plabs/go-k8s-healthcheck
   newTag: dev
-
-# Dev-specific config overrides
-configMapGenerator:
-- name: go-k8s-healthcheck-config
-  behavior: merge
-  literals:
-  - APP_ENV=development
-  - LOG_LEVEL=debug
 
 patches:
 - path: patch.yaml

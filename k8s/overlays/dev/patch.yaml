@@ -3,12 +3,16 @@ kind: Deployment
 metadata:
   name: go-k8s-healthcheck
 spec:
-  # Dev: single replica is fine, saves resources
   replicas: 1
   template:
     spec:
       containers:
       - name: server
+        env:
+        - name: APP_ENV
+          value: "development"
+        - name: LOG_LEVEL
+          value: "debug"
         resources:
           requests:
             cpu: "50m"

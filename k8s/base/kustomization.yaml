@@ -13,6 +13,7 @@ resources:
 - pdb.yaml
 - networkpolicy.yaml
 
-commonLabels:
-  app.kubernetes.io/managed-by: kustomize
-  app.kubernetes.io/part-of: go-k8s-healthcheck
+labels:
+- pairs:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/part-of: go-k8s-healthcheck
