@@ -1,0 +1,22 @@
+# Binary output
+/server
+/bin/
+
+# Go toolchain
+*.test
+*.out
+vendor/
+
+# Environment files — never commit secrets
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp

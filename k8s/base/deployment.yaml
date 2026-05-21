@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-k8s-healthcheck
+  namespace: healthcheck
+  labels:
+    app.kubernetes.io/name: go-k8s-healthcheck
+    app.kubernetes.io/component: server
+    app.kubernetes.io/version: "dev"
+spec:
+  replicas: 2
+  # Zero-downtime rolling update: never take a pod down before a new one is ready
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: go-k8s-healthcheck
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: go-k8s-healthcheck
+        app.kubernetes.io/component: server
+        app.kubernetes.io/version: "dev"
+      annotations:
+        # Force pod restart when ConfigMap changes
+        kubectl.kubernetes.io/restartedAt: ""
+    spec:
+      serviceAccountName: go-k8s-healthcheck
+      # Allow graceful shutdown time (must be > app SHUTDOWN_TIMEOUT_SEC=30)
+      terminationGracePeriodSeconds: 60
+      # Spread pods across nodes to avoid single point of failure
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: go-k8s-healthcheck
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: server
+        image: ghcr.io/plabs/go-k8s-healthcheck:dev
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        # Load all config from ConfigMap
+        envFrom:
+        - configMapRef:
+            name: go-k8s-healthcheck-config
+        env:
+        - name: APP_ENV
+          value: "production"
+        # Liveness: is the process alive?
+        # Restart the container if it stops responding.
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        # Readiness: is the app ready to receive traffic?
+        # Remove from LB until it returns 200.
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: http
+          initialDelaySeconds: 3
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 3
+        # Startup: give extra time on cold start before liveness kicks in.
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          failureThreshold: 10
+          periodSeconds: 3
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+        # Harden the container: non-root, no privilege escalation, read-only FS
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
+        # Give Kubernetes time to drain connections before SIGTERM
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault

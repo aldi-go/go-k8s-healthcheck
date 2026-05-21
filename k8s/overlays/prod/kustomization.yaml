@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base
+
+# Override image tag to a pinned semver (updated by CI on release)
+images:
+- name: ghcr.io/plabs/go-k8s-healthcheck
+  newTag: "1.0.0"
+
+configMapGenerator:
+- name: go-k8s-healthcheck-config
+  behavior: merge
+  literals:
+  - APP_ENV=production
+  - LOG_LEVEL=info
+  - VERSION=1.0.0
+
+patches:
+- path: patch.yaml
+  target:
+    kind: Deployment
+    name: go-k8s-healthcheck

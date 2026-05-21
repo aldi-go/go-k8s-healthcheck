@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: go-k8s-healthcheck
+  namespace: healthcheck
+spec:
+  # Ensure at least 1 pod is always available during voluntary disruptions
+  # (node drains, cluster upgrades, etc.)
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: go-k8s-healthcheck
